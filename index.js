@@ -1,3 +1,5 @@
+'use strict'
+
 /* globals fetch, Headers */
 /* istanbul ignore next */
 if (!process.browser) {
@@ -23,22 +25,10 @@ const makeBody = value => {
   return value
 }
 
-const resolvable = () => {
-  let _resolve
-  let _reject
-  let p = new Promise((resolve, reject) => {
-    _resolve = resolve
-    _reject = reject
-  })
-  p.resolve = (...args) => _resolve(...args)
-  p.reject = (...args) => _reject(...args)
-  return p
-}
-
 class R2 {
   constructor (...args) {
     this.opts = {method: 'GET'}
-    this.response = resolvable()
+    this.response = Promise.resolve().then(() => this._request())
     this._headers = {}
     this._caseless = caseless(this._headers)
 
@@ -67,10 +57,6 @@ class R2 {
     })
 
     this._args(...args)
-
-    setTimeout(() => {
-      this._request()
-    }, 0)
   }
   _args (...args) {
     let opts = this.opts
@@ -131,9 +117,7 @@ class R2 {
 
     this.opts.headers = makeHeaders(this._headers)
 
-    fetch(url, this.opts)
-    .then(resp => this.response.resolve(resp))
-    .catch(err => this.response.reject(err))
+    return fetch(url, this.opts)
   }
   setHeaders (obj) {
     for (let key in obj) {
